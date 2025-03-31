@@ -219,14 +219,20 @@ def signup(registration: Registration) -> Account:
             logger.info(f"✅ 提交注册信息")
         else:
             raise RuntimeError('填写注册信息失败')
+        
+        if not BrowserManager.bypass_turnstile(tab):
+            raise RuntimeError("无法越过 Cloudflare Turnstile")
 
-        if tab.ele("@name=password"):
+        if tab.ele("@name=password", timeout=10):
             tab.ele("@name=password").input(registration.password)
             time.sleep(random.uniform(1, 2))
             tab.ele("@type=submit").click()
             logger.info(f"✅ 填写登录密码")
         else:
             raise RuntimeError('填写登录密码失败')
+        
+        if not BrowserManager.bypass_turnstile(tab):
+            raise RuntimeError("无法越过 Cloudflare Turnstile")
 
         if tab.ele("This email is not available."):
             raise RuntimeError(f"邮箱[{registration.mail_addr}]已被使用")

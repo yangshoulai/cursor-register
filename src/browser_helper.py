@@ -73,6 +73,8 @@ class BrowserManager:
                 if turnstileResponse:
                     return True
                 challengeSolution = tab.ele("@name=cf-turnstile-response")
+                if not challengeSolution:
+                    return True
                 challengeWrapper = challengeSolution.parent()
                 challengeIframe = challengeWrapper.shadow_root.ele("tag:iframe")
                 challengeIframeBody = challengeIframe.ele("tag:body").shadow_root
