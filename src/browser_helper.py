@@ -63,23 +63,26 @@ class BrowserManager:
 
     @staticmethod
     def bypass_turnstile(tab) -> bool:
-        for _ in range(2):
+        turnstile = tab.run_js("try { return turnstile } catch(e) { }")
+        if not turnstile:
+            return True
+
+        challengeSolution = tab.ele("@name=cf-turnstile-response")
+        if not challengeSolution:
+            return True
+        tab.run_js("try { return turnstile.reset() } catch(e) { }")
+
+        challengeWrapper = challengeSolution.parent()
+        challengeIframe = challengeWrapper.shadow_root.ele("tag:iframe")
+        challengeIframeBody = challengeIframe.ele("tag:body").shadow_root
+        challengeButton = challengeIframeBody.ele("tag:input")
+        challengeButton.click()
+        for _ in range(5):
             try:
-                challengeSolution = tab.ele("@name=cf-turnstile-response")
-                if not challengeSolution:
-                    return True
-                turnstile = tab.run_js("try { return turnstile } catch(e) { }")
-                if not turnstile:
-                    return True
-                tab.run_js("try { return turnstile.reset() } catch(e) { }")
                 turnstileResponse = tab.run_js("try { return turnstile.getResponse() } catch(e) { return null }")
                 if turnstileResponse:
                     return True
-                challengeWrapper = challengeSolution.parent()
-                challengeIframe = challengeWrapper.shadow_root.ele("tag:iframe")
-                challengeIframeBody = challengeIframe.ele("tag:body").shadow_root
-                challengeButton = challengeIframeBody.ele("tag:input")
-                challengeButton.click()
+                time.sleep(2)
             except:
                 pass
         return False
