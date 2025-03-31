@@ -41,7 +41,7 @@
 4. 克隆项目
 
 ```bash
-git clone https://github.com/yourusername/cursor-register.git
+git clone https://github.com/yangshoulai/cursor-register.git
 cd cursor-register
 ```
 
