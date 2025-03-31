@@ -1,0 +1,5 @@
+DrissionPage==4.1.0.9
+DrissionPage==4.1.0.18
+python-dotenv==1.1.0
+Requests==2.32.3
+tzlocal==5.3.1
