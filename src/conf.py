@@ -1,3 +1,4 @@
+import pathlib
 from dotenv import load_dotenv
 import os
 
@@ -19,3 +20,6 @@ BROWSER_USER_AGENT = os.getenv(
 BROWSER_PROXY = os.getenv("BROWSER_PROXY", '')
 # 使用使用无头浏览器
 BROWSER_HEADLESS = os.getenv("BROWSER_HEADLESS", 'false') == 'true'
+
+# Cursor 安装路径
+APP_PATH = pathlib.Path(os.getenv("APP_PATH", '/Applications/Cursor.app/Contents/Resources/app'))

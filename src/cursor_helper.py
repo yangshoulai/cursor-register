@@ -1,13 +1,17 @@
-import datetime
+import pathlib
+import platform
 import hashlib
 import json
 import os
 import random
+import re
+import shutil
 import sqlite3
 import sys
 import time
 import uuid
 from conf import MAIL_DOMAIN
+import conf
 import logger
 from model import Account, Registration
 from browser_helper import BrowserManager
@@ -279,3 +283,84 @@ def save_account(acc: Account) -> str:
     with open(file, 'w') as f:
         json.dump(acc.__dict__, f, indent=4)
     return file
+
+
+def patch_cursor():
+    main_js_path = conf.APP_PATH / "out" / "main.js"
+    with open(main_js_path, 'rb') as f:
+        main_js = f.read()
+    machine_id = str(uuid.uuid4())
+    main_js = _replace(
+        main_js,
+        r"=.{0,50}timeout.{0,10}5e3.*?,",
+        f'=/*csp1*/"{machine_id}"/*1csp*/,',
+        r"=/\*csp1\*/.*?/\*1csp\*/,"
+    )
+
+    mac_addr = _mac_addr()
+    main_js = _replace(
+        main_js,
+        r"(function .{0,50}\{).{0,300}Unable to retrieve mac address.*?(\})",
+        f'\\1return/*csp2*/"{mac_addr}"/*2csp*/;\\2',
+        r"()return/\*csp2\*/.*?/\*2csp\*/;()"
+    )
+
+    sqm = ''
+    main_js = _replace(
+        main_js,
+        r'return.{0,50}\.GetStringRegKey.*?HKEY_LOCAL_MACHINE.*?MachineId.*?\|\|.*?""',
+        f'return/*csp3*/"{sqm}"/*3csp*/',
+        r"return/\*csp3\*/.*?/\*3csp\*/"
+    )
+
+    dev_id = str(uuid.uuid4())
+    main_js = _replace(
+        main_js,
+        r"return.{0,50}vscode\/deviceid.*?getDeviceId\(\)",
+        f'return/*csp4*/"{dev_id}"/*4csp*/',
+        r"return/\*csp4\*/.*?/\*4csp\*/"
+    )
+
+    bak_file_path = main_js_path.with_name(main_js_path.name + ".bak")
+    if not os.path.exists(bak_file_path):
+        shutil.copy2(main_js_path, bak_file_path)
+        logger.info(f"✅ 创建备份文件: {bak_file_path}")
+
+    with open(main_js_path, "wb") as f:
+        f.write(main_js)
+
+
+def _mac_addr() -> str:
+    mac_addr = None
+    while not mac_addr or mac_addr in (
+        "00:00:00:00:00:00",
+        "ff:ff:ff:ff:ff:ff",
+        "ac:de:48:00:11:22",
+    ):
+        mac_addr = ":".join([f"{random.randint(0, 255):02X}" for _ in range(6)])
+    return mac_addr
+
+
+def _replace(
+    data: bytes, pattern: str | bytes, replace: str | bytes, probe: str | bytes
+) -> bytes:
+    if isinstance(pattern, str):
+        pattern = pattern.encode()
+    if isinstance(replace, str):
+        replace = replace.encode()
+    if isinstance(probe, str):
+        probe = probe.encode()
+    assert isinstance(pattern, bytes)
+    assert isinstance(replace, bytes)
+    assert isinstance(probe, bytes)
+
+    regex = re.compile(pattern, re.DOTALL)
+    count = len(list(regex.finditer(data)))
+    patched_regex = re.compile(probe, re.DOTALL)
+    patched_count = len(list(patched_regex.finditer(data)))
+
+    if count == 0 and patched_count <= 0:
+        return data
+    data, _ = patched_regex.subn(replace, data)
+    data, _ = regex.subn(replace, data)
+    return data

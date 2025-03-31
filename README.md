@@ -64,6 +64,9 @@ MAIL_DOMAIN=<申请的邮箱域名，例如your_domain.com>
 BROWSER_USER_AGENT=<浏览器UA，配置成自己本地浏览器的 UA>
 BROWSER_PROXY=<浏览器代理，例如http://your-proxy-ip:port>  # 可选
 BROWSER_HEADLESS=true  # 是否使用无头浏览器
+
+# Cursor 安装路径
+APP_PATH=<Cursor 安装路径，例如(MacOS)/Applications/Cursor.app/Contents/Resources/app, (Windows)${LOCALAPPDATA}\Programs\cursor\resources\app>
 ```
 
 ## 使用方法
